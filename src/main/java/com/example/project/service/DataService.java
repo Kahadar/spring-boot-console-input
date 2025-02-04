@@ -2,23 +2,24 @@ package com.example.project.service;
 
 import com.example.project.model.DataEntity;
 import com.example.project.repository.DataRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import java.util.List;
+
+import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class DataService {
+
     private final DataRepository dataRepository;
 
-    public DataService(DataRepository dataRepository) {
-        this.dataRepository = dataRepository;
-    }
+    public void saveData(Integer cost) {
+        DataEntity dataEntity = new DataEntity();
+        dataEntity.setDateTime(LocalDateTime.now());
+        dataEntity.setCost(cost);
+        dataEntity.setUserId(null);
+        dataEntity.setKassa(null);
 
-    public void saveData(String value, int rowNumber) {
-        DataEntity entity = new DataEntity(rowNumber, value);
-        dataRepository.save(entity);
-    }
-
-    public List<DataEntity> getAllData() {
-        return dataRepository.findAll();
+        dataRepository.save(dataEntity);
     }
 }

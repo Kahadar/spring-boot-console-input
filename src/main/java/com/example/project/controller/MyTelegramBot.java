@@ -1,6 +1,8 @@
 package com.example.project.controller;
 
 import com.example.project.service.DataService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -12,10 +14,10 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class MyTelegramBot extends TelegramLongPollingBot {
 
     @Value("${telegram.bot.username}")
@@ -25,11 +27,6 @@ public class MyTelegramBot extends TelegramLongPollingBot {
     private String botToken;
 
     private final DataService dataService;
-    private int rowNumber = 1; // Номер строки для хранения данных
-
-    public MyTelegramBot(DataService dataService) {
-        this.dataService = dataService;
-    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
@@ -49,16 +46,21 @@ public class MyTelegramBot extends TelegramLongPollingBot {
             String chatId = message.getChatId().toString();
 
             if (text.equalsIgnoreCase("/start")) {
-                sendMessage(chatId, "Привет! Введите значения, которые хотите сохранить в БД.");
+                sendMessage(chatId, "Привет! Введите число для сохранения в БД.");
             } else {
-                saveValue(chatId, text);
+                handleInput(chatId, text);
             }
         }
     }
 
-    private void saveValue(String chatId, String value) {
-        dataService.saveData(value, rowNumber++);
-        sendMessage(chatId, "Значение '" + value + "' сохранено!");
+    private void handleInput(String chatId, String text) {
+        try {
+            int cost = Integer.parseInt(text);
+            dataService.saveData(cost);
+            sendMessage(chatId, "Значение '" + cost + "' сохранено!");
+        } catch (NumberFormatException e) {
+            sendMessage(chatId, "Ошибка: Введите число!");
+        }
     }
 
     private void sendMessage(String chatId, String text) {

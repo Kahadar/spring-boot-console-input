@@ -1,30 +1,28 @@
 package com.example.project.model;
 
 import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "data_table")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
 public class DataEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Integer rowNumber;
+    private LocalDateTime dateTime = LocalDateTime.now();
 
-    @Column(nullable = false)
-    private String value;
+    private Long userId; // Зарезервировано, остается пустым
 
-    public DataEntity() {}
+    private Integer cost;
 
-    public DataEntity(Integer rowNumber, String value) {
-        this.rowNumber = rowNumber;
-        this.value = value;
-    }
-
-    public Long getId() { return id; }
-    public Integer getRowNumber() { return rowNumber; }
-    public void setRowNumber(Integer rowNumber) { this.rowNumber = rowNumber; }
-    public String getValue() { return value; }
-    public void setValue(String value) { this.value = value; }
+    private String kassa; // Зарезервировано, остается пустым
 }
