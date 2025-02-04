@@ -56,6 +56,7 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         if (message != null && message.hasText()) {
             String text = message.getText().trim();
             String chatId = message.getChatId().toString();
+            Long userId = message.getFrom().getId(); // Определяем userId
 
             switch (text) {
                 case "/start":
@@ -66,16 +67,20 @@ public class MyTelegramBot extends TelegramLongPollingBot {
                     handleSumCommand(chatId);
                     break;
 
+                case "/my-sum":
+                    handleMySumCommand(chatId, userId);
+                    break;
+
                 default:
-                    handleInput(chatId, text);
+                    handleInput(chatId, userId, text);
             }
         }
     }
 
-    private void handleInput(String chatId, String text) {
+    private void handleInput(String chatId, Long userId, String text) {
         try {
             int cost = Integer.parseInt(text);
-            dataService.saveData(cost);
+            dataService.saveData(userId, cost);
             sendMessage(chatId, "Значение '" + cost + "' сохранено!");
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Ошибка: Введите число!");
@@ -86,6 +91,12 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         int totalSum = dataService.getTotalSum();
         double portion = totalSum / 3.0;
         sendMessage(chatId, "Сумма: " + totalSum + "\nТвой кусок: " + portion);
+    }
+
+    private void handleMySumCommand(String chatId, Long userId) {
+        int userSum = dataService.getUserSum(userId);
+        double portion = userSum / 3.0;
+        sendMessage(chatId, "Твоя сумма: " + userSum + "\nТвой кусок: " + portion);
     }
 
     private void sendMessage(String chatId, String text) {
