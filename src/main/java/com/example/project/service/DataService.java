@@ -22,4 +22,9 @@ public class DataService {
 
         dataRepository.save(dataEntity);
     }
+    public int getTotalSum() {
+        return dataRepository.findAll().stream()
+                .mapToInt(DataEntity::getCost)
+                .sum();
+    }
 }

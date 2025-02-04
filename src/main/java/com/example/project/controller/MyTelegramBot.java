@@ -41,7 +41,7 @@ public class MyTelegramBot extends TelegramLongPollingBot {
             botsApi.registerBot(this);
             log.info("Бот успешно запущен!");
 
-            // Отправка приветствия
+            // Отправка приветствия в лог
             String greetingMessage = loadGreetingMessage();
             log.info("Приветственное сообщение: \n{}", greetingMessage);
 
@@ -57,10 +57,17 @@ public class MyTelegramBot extends TelegramLongPollingBot {
             String text = message.getText().trim();
             String chatId = message.getChatId().toString();
 
-            if (text.equalsIgnoreCase("/start")) {
-                sendMessage(chatId, loadGreetingMessage());
-            } else {
-                handleInput(chatId, text);
+            switch (text) {
+                case "/start":
+                    sendMessage(chatId, loadGreetingMessage());
+                    break;
+
+                case "/sum":
+                    handleSumCommand(chatId);
+                    break;
+
+                default:
+                    handleInput(chatId, text);
             }
         }
     }
@@ -73,6 +80,12 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Ошибка: Введите число!");
         }
+    }
+
+    private void handleSumCommand(String chatId) {
+        int totalSum = dataService.getTotalSum();
+        double portion = totalSum / 3.0;
+        sendMessage(chatId, "Сумма: " + totalSum + "\nТвой кусок: " + portion);
     }
 
     private void sendMessage(String chatId, String text) {
