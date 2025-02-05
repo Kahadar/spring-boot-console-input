@@ -4,7 +4,9 @@ import com.example.project.service.DataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -33,6 +35,7 @@ public class MyTelegramBot extends TelegramLongPollingBot {
     private String botToken;
 
     private final DataService dataService;
+    private final ApplicationContext context; // Контекст для завершения Spring Boot
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
@@ -56,23 +59,27 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         if (message != null && message.hasText()) {
             String text = message.getText().trim();
             String chatId = message.getChatId().toString();
-            Long userId = message.getFrom().getId(); // Определяем userId
+            Long userId = message.getFrom().getId();
 
-            switch (text) {
-                case "/start":
-                    sendMessage(chatId, loadGreetingMessage());
-                    break;
+            if (text.startsWith("/exist")) {
+                handleExistCommand(chatId, userId, text);
+            } else {
+                switch (text) {
+                    case "/start":
+                        sendMessage(chatId, loadGreetingMessage());
+                        break;
+//
+//                    case "/sum":
+//                        handleSumCommand(chatId);
+//                        break;
 
-                case "/sum":
-                    handleSumCommand(chatId);
-                    break;
+                    case "/shutdown":
+                        handleShutdownCommand(chatId);
+                        break;
 
-                case "/my-sum":
-                    handleMySumCommand(chatId, userId);
-                    break;
-
-                default:
-                    handleInput(chatId, userId, text);
+                    default:
+                        handleInput(chatId, userId, text);
+                }
             }
         }
     }
@@ -82,21 +89,54 @@ public class MyTelegramBot extends TelegramLongPollingBot {
             int cost = Integer.parseInt(text);
             dataService.saveData(userId, cost);
             sendMessage(chatId, "Значение '" + cost + "' сохранено!");
+            handleMySumCommand(chatId, userId); // Отправляем текущую сумму
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Ошибка: Введите число!");
         }
     }
 
-    private void handleSumCommand(String chatId) {
-        int totalSum = dataService.getTotalSum();
-        double portion = totalSum / 3.0;
-        sendMessage(chatId, "Сумма: " + totalSum + "\nТвой кусок: " + portion);
-    }
+//    private void handleSumCommand(String chatId) {
+//        int totalSum = dataService.getTotalSum();
+//        double portion = totalSum / 3.0;
+//        sendMessage(chatId, "Сумма: " + totalSum + "\nТвой кусок: " + portion);
+//    }
 
     private void handleMySumCommand(String chatId, Long userId) {
         int userSum = dataService.getUserSum(userId);
         double portion = userSum / 3.0;
-        sendMessage(chatId, "Твоя сумма: " + userSum + "\nТвой кусок: " + portion);
+        sendMessage(chatId, "Сумма по заказам: " + userSum + "\nТвой кусок: " + portion);
+    }
+
+    private void handleExistCommand(String chatId, Long userId, String text) {
+        String[] parts = text.split(" ");
+        if (parts.length != 2) {
+            sendMessage(chatId, "Ошибка: Введите число после /exist, например: /exist 100");
+            return;
+        }
+
+        try {
+            int value = Integer.parseInt(parts[1]);
+            int cost = value * 3;
+            dataService.saveData(userId, cost);
+            sendMessage(chatId, "Зп " + value + " добавлена в расчетный период");
+        } catch (NumberFormatException e) {
+            sendMessage(chatId, "Ошибка: Введите корректное число после /exist.");
+        }
+    }
+
+    private void handleShutdownCommand(String chatId) {
+        sendMessage(chatId, "Бот завершает работу...");
+        log.info("Бот завершает работу по команде /shutdown");
+
+        Thread shutdownThread = new Thread(() -> {
+            try {
+                Thread.sleep(1000); // Даем время на отправку сообщения
+            } catch (InterruptedException ignored) {}
+
+            SpringApplication.exit(context, () -> 0);
+            System.exit(0);
+        });
+        shutdownThread.start();
     }
 
     private void sendMessage(String chatId, String text) {
